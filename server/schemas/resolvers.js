@@ -1,0 +1,46 @@
+const { AuthenticationError } = require('apollo-server-express');
+const { User, Book } = require('../models');
+const { signToken } = require('../utils/auth');
+const controller = require('../controllers/user-controller')
+
+const resolvers = {
+    Query: {
+        user: async (parent, { username }) => {
+            const userRes = await controller.getSingleUser({username});
+            return userRes;
+        },
+        me: async (parent, args, context) => {
+            if (context.user) {
+                const userRes = await controller.getSingleUser({ _id: context.user._id });
+                return userRes;
+            }
+            throw new AuthenticationError('You need to be logged in!!');
+        }
+    },
+
+    Mutation: {
+        addUser: async (parent, { username, email, password }) => {
+            const userResponse = await controller.createUser(username, email, password);
+            return userResponse;
+        },
+        login: async (parent, { email, password }) => {
+            const userLoginResponse = await controller.login(email, password);
+
+            return userLoginResponse;
+        },
+        saveBook: async (parent, { authors, description, bookId, image, link, title }) => {
+            const bookToAdd = {
+                authors, description, bookId, image, link, title
+            }
+
+            const userAddResponse = await controller.saveBook(context.user, bookToAdd);
+           return userAddResponse;
+        },
+        removeBook: async (parent, { bookId }, context) => {
+            const userDeleteResponse = await controller.deleteBook(context.user, bookId);
+            return userDeleteResponse;
+        }
+    }
+}
+
+module.exports = resolvers;
